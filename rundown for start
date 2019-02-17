@@ -1,0 +1,38 @@
+#Linux的開機的時候，會有一步讀取/etc/inittab中配置文件，選定系統運行級別，然後進行系統初始化，執行/rc.d/下的RC腳本;
+#而其中的/etc/rc.d/rc.local自啟動腳本是Linux的用戶留給自定義個性啟動項的一個腳本
+
+[root@bogon ~]# cat /etc/rc.d/rc.local 
+#!/bin/sh
+
+#This script will be executed *after* all the other init scripts.
+#You can put your own initialization stuff in here if you don't
+#want to do the full Sys V style init stuff.
+
+touch /var/lock/subsys/local
+
+### 方案一：
+使用/etc/rc.d/rc.local自啟動腳本文件實現開機自動運行普通用戶
+腳本有兩種實現方法：
+1，把需要開機啟動的腳本程序直接寫入/etc/rc.d/rc.local文件中，這樣子開機時就會自動執行這些腳本程序，運行對應的服務程序。需要在根環境下編輯
+2，先把腳本程序寫好，定義好路徑，然後使用ス命令來執行，這裡只需把蘇命令寫進/etc/rc.d/rc.local文件腳本文件中即可。
+比如：我需要開機執行/home/ricky/bin/ricky.sh腳本，那麼在/etc/rc.d/rc。本地中加入以下語句：
+`[root@bogon~]#echo "su - ricky -c '/bin/sh /home/ricky/bin/ricky.sh'" &gt;&gt;/etc/rc.d/local`
+命令的執行路徑一定要用絕對路徑，防止因環境變量原因而出錯。
+
+### 方案二：
+我們都了解/etc/init.d/中目錄下的所有文件都是腳本文件，這個目錄下的腳本文件，在設置好開機自啟動項後，在開機時會自動執行。
+使用根賬號，自啟動腳本編輯腳（隨意寫的一個啟動腳本）
+[root@bogon ~]#vim /etc/init.d/networkstart
+#!/bin/bash
+#network start scripts
+
+#chkconfig: 235 80 30  --235指定的啟動级别，在哪写啟動级别下啟動；--80 啟動的優先级；--30 關閉的優先级
+service network start –-啟動network服務（你也可以把普通用户脚本放这里，开机启动的时候就会执行；也可以定义好脚本路径，把执行脚本的命令放进这里）
+文件默認是沒有執行權限的，所以要調整好腳本文件權限
+
+`[root@bogon ~]# chmod +x /etc/init.d/networkstart`
+
+還需要加入啟動項設置開機啟動，使腳本文件生效
+
+[root@bogon ~]# chkconfig --add networkstart 加入啟動項
+[root@bogon ~]# chkconfig networkstart on   設定開機自動啟動
